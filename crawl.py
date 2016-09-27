@@ -1,86 +1,85 @@
 #!/usr/bin/env python2.7
 import argparse
+import traceback
 import requests
 from elasticsearch import Elasticsearch
 
 
-def crawl(es, address, depth=2, stewards={}):
-    if depth == 0:
-        return stewards
+def update_submissions(es, steward, timeout):
+    """
+    Add any submissions that don't already exist in the index.
 
-    try:
-        print("Crawling {} depth = {}".format(address, depth))
-        r = requests.get("http://ipfs:8080/ipns/{}".format(address), timeout=5.0)
-        print(r.status_code)
-        assert(r.status_code == requests.codes.ok)
-        steward = r.json()
-        print("{} Submissions".format(len(steward["submissions"])))
-        if es.exists(index="stewards", doc_type="indexes", id=address):
-            es.delete(index="stewards", doc_type="indexes", id=address)
-        es.create(index="stewards", doc_type="indexes", id=address, body=steward)
-        stewards[address] = steward
-        for multihash in steward["submissions"]:
-            r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=5.0)
+    REMIND: Adds submissions as separate doctype with a parent
+    reference via "steward". This means a submission by hash
+    only lives in one steward and therefore first one crawled
+    will win. Alternative would be compound id, or including
+    the full submission record in the steward itself...
+    """
+    for multihash in steward["submissions"]:
+        if es.exists(index="cgt", doc_type="submission", parent=steward["address"], id=multihash):
+            print("Submission already exists {}".format(multihash))
+        else:
+            print("Adding submission {}".format(multihash))
+            r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
             if r.status_code == requests.codes.ok:
                 submission = r.json()
-                if not es.exists(index="submissions", doc_type="fields", id=multihash):
-                    print("Adding submission {}".format(multihash))
-                    es.create(index="submissions", doc_type="fields", id=multihash,
-                              body=submission)
+                submission["steward"] = steward["address"]  # parent pointer
+                es.create(index="cgt", doc_type="submission", id=multihash,
+                          parent=steward["address"], body=submission)
             else:
-                print("Problems getting submission {} : {}".format(multihash,
-                                                                   r.status_code))
-        for address in steward["peers"]:
-            if address in stewards:
-                print("Skipping {}, already resolved".format(address))
+                print("Problems getting submission {} : {}".format(multihash, r.status_code))
+
+
+def update_steward(es, address, timeout):
+    """
+    Resolve and update the steward and submissions documents and
+    return its peer list.
+    """
+    print("Updating steward {}".format(address))
+    try:
+        r = requests.get("http://ipfs:5001/api/v0/name/resolve?arg={}".format(
+            address), timeout=timeout)
+        assert(r.status_code == requests.codes.ok)
+        multihash = r.json()["Path"].rsplit('/')[-1]
+        print("Resolved to {}".format(multihash))
+        r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
+        assert(r.status_code == requests.codes.ok)
+        steward = r.json()
+        steward["multihash"] = multihash  # so we can easily detect changes in submission list
+        steward["address"] = address  # convenience for guis
+        print("Found {} Submissions".format(len(steward["submissions"])))
+
+        if es.exists(index="cgt", doc_type="steward", id=address):
+            res = es.get(index="cgt", doc_type="steward", id=address, fields="multihash")
+            if res["fields"]["multihash"][0] == multihash:
+                print("Steward {} {} has not changed, skipping".format(steward["domain"], address))
             else:
-                crawl(es, address, depth-1, stewards)
+                print("Updating steward {} {}".format(steward["domain"], address))
+                es.index(index="cgt", doc_type="steward", id=address, body=steward)
+                update_submissions(es, steward, timeout)
+        else:
+            es.index(index="cgt", doc_type="steward", id=address, body=steward)
+            update_submissions(es, steward, timeout)
+
+        return steward["peers"]
     except Exception as e:
-        stewards[address] = {"domain": "unreachable",
-                             "peers": [], "submissions": []}
+        traceback.print_exc()
         print("Skipping peer {} problems resolving: {}".format(
             address, e.message))
 
-    # if es.exists(index="stewards", doc_type="indexes", id=address):
-    #     print("Existing steward record already in es")
-    #     res = es.get(index="stewards", doc_type="indexes", id=address)
-    #     saved = res["_source"]
 
-    # peers = None
-    # if not latest and not saved:
-    #     print("ERROR: Unable to resolve or find anything in es")
-    #     return
-    # elif not latest and saved:
-    #     print("ERROR: Unable to resolve steward but have saved, will crawl")
-    #     peers = saved["peers"]
-    # elif latest and not saved:
-    #     print("Found new steward: {} {}".format(latest["domain"], address))
-    #     es.create(index="stewards", doc_type="indexes", id=address, body=latest)
-    #     peers = latest["peers"]
-    #     for multihash in latest["submissions"]:
-    #         submission = json.loads(ipfs.cat(multihash))
-    #         if not es.exists(index="submissions", doc_type="fields", id=multihash):
-    #             print("Adding submission {}".format(multihash))
-    #             es.create(index="submissions", doc_type="fields", id=multihash,
-    #                       body=submission)
-    # else:
-    #     if latest["multihash"] == saved["multihash"]:
-    #         print("Nothing changed")
-    #         peers = latest["peers"]
-    #     else:
-    #         print("Stewared updated")
-    #         es.create(index="stewards", doc_type="indexes", id=address, body=latest)
-    #         for multihash in latest["submissions"]:
-    #             submission = json.loads(ipfs.cat(multihash))
-    #             if not es.exists(index="submissions", doc_type="fields", id=multihash):
-    #                 print("Adding submission {}".format(multihash))
-    #                 es.create(index="submissions", doc_type="fields",
-    #                           id=multihash, body=submission)
-    #         peers = latest["peers"]
+def crawl(es, address, timeout, depth):
+    if depth == 0:
+        return
 
-    # if depth > 0:
-    #     for peer in peers:
-    #         crawl(ipfs, es, peer, depth - 1)
+    try:
+        print("Crawling {} depth = {}".format(address, depth))
+        peers = update_steward(es, address, timeout)
+        for address in peers:
+            crawl(es, address, timeout, depth-1)
+    except Exception as e:
+        traceback.print_exc()
+        print("Skipping peer {} problems resolving: {}".format(address, e.message))
 
 
 def main():
@@ -91,16 +90,31 @@ def main():
     submissions.
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("-t", "--timeout", type=int, default=5,
+                        help="Seconds to wait for IPNS to resolve a steward")
+    parser.add_argument("-d", "--depth", type=int, default=2,
+                        help="How deep to follow the peer graph")
     parser.add_argument("address", nargs='?', default="",
-                        help="Address of steward to start")
+                        help="Address of steward to start crawl")
     args = parser.parse_args()
 
     es = Elasticsearch(hosts=["es"])
+    es.indices.create(index="cgt", ignore=400, body={
+        "mappings": {
+            "steward": {},
+            "submission": {
+                "_parent": {
+                    "type": "steward"
+                }
+            }
+        }
+    })
 
-    if not args.address:
-        crawl(es, requests.get("http://ipfs:5001/api/v0/id").json()["ID"], 3)
+    if args.address:
+        crawl(es, args.address, args.timeout, args.depth)
     else:
-        crawl(es, args.address)
+        # Default to crawling the steward attached to the linked ipfs
+        crawl(es, requests.get("http://ipfs:5001/api/v0/id").json()["ID"], args.timeout, args.depth)
 
 
 if __name__ == '__main__':

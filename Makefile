@@ -11,8 +11,20 @@ down:
 	docker stop es || true && docker rm es || true
 
 reset:
-	curl -X DELETE localhost:9200/stewards
-	curl -X DELETE localhost:9200/submissions
+	curl -X DELETE localhost:9200/cgt
+	curl localhost:9200/_cat/indices?v
 
 crawl:
-	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt $(address)
+	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt $(address) -d 4 -t 10
+
+nginx:
+	docker stop nginx || true && docker rm nginx || true
+	docker run -it --rm --name nginx \
+		--link cgtd:cgtd \
+		--link ipfs:ipfs \
+		--link es:es \
+		-p 5282:80 \
+		-v `pwd`/default.conf:/etc/nginx/conf.d/default.conf:ro \
+		-v `pwd`/nginx.conf:/etc/nginx/nginx.conf:ro \
+		-v `pwd`/www:/usr/share/nginx/html:ro \
+		nginx
