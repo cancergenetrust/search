@@ -5,7 +5,7 @@ $('document').ready(function() {
       $.getJSON("/es/_search?q=" + $(this).val(), function(results) {
         console.log(results);
         if (results.hits.total > 0) {
-          window.open("/cgtd/submission.html?multihash=" + results.hits.hits[0]._id);
+          window.open("/cgtd/index.html?submission=" + results.hits.hits[0]._id);
         }
       });
 		}
@@ -13,10 +13,11 @@ $('document').ready(function() {
 
 	$("#progressDialog").modal("show");
 	$("#progress").html("Finding and authenticating stewards...");
-	$.getJSON("/cgtd/v0/stewards", function(stewards) {
+	// $.getJSON("/cgtd/v0/stewards", function(stewards) {
 	// $.getJSON("/stewards_temp.json", function(stewards) {
+  $.getJSON("/es/cgt/steward/_search/?size=15", function(results) {
 		$("#progressDialog").modal("hide");
-		if (stewards.length == 0) {
+		if (results.hits.total == 0) {
 			alert("No stewards found");
 		} else {
 			var cy = cytoscape({
@@ -50,15 +51,17 @@ $('document').ready(function() {
 				],
 			});
 
+      stewards = _.indexBy(results.hits.hits, '_id');
+
 			let addresses = _.keys(stewards);
 			for (var i=0; i < addresses.length; i++) {
 				cy.add({data: {id: addresses[i],
-					label: stewards[addresses[i]].submissions.length + "\n" +
-					stewards[addresses[i]].domain}});
+					label: stewards[addresses[i]]._source.submissions.length + "\n" +
+					stewards[addresses[i]]._source.domain}});
 			}
 
 			for (var i=0; i < addresses.length; i++) {
-				var peers = stewards[addresses[i]].peers;
+				var peers = stewards[addresses[i]]._source.peers;
 				for (var j=0; j < peers.length; j++) {
 					cy.add({data: {id: 'edge' + i + j, source: addresses[i], target: peers[j]}});
 				}
@@ -69,7 +72,7 @@ $('document').ready(function() {
 			});
 
 			cy.on('tap', 'node', function(event) {
-				window.open("/cgtd/steward.html?address="+this.data("id"));
+				window.open("/cgtd/index.html?steward="+this.data("id"));
 			});
 		}
 	});

@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 import argparse
-import traceback
+# import traceback
 import requests
 from elasticsearch import Elasticsearch
 
@@ -16,9 +16,8 @@ def update_submissions(es, steward, timeout):
     the full submission record in the steward itself...
     """
     for multihash in steward["submissions"]:
-        if es.exists(index="cgt", doc_type="submission", parent=steward["address"], id=multihash):
-            print("Submission already exists {}".format(multihash))
-        else:
+        if not es.exists(index="cgt", doc_type="submission",
+                         parent=steward["address"], id=multihash):
             print("Adding submission {}".format(multihash))
             r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
             if r.status_code == requests.codes.ok:
@@ -54,18 +53,22 @@ def update_steward(es, address, timeout):
             if res["fields"]["multihash"][0] == multihash:
                 print("Steward {} {} has not changed, skipping".format(steward["domain"], address))
             else:
-                print("Updating steward {} {}".format(steward["domain"], address))
+                print("Updating steward: {} {}".format(steward["domain"], address))
                 es.index(index="cgt", doc_type="steward", id=address, body=steward)
                 update_submissions(es, steward, timeout)
         else:
+            print("New steward: {} {}".format(steward["domain"], address))
             es.index(index="cgt", doc_type="steward", id=address, body=steward)
             update_submissions(es, steward, timeout)
 
         return steward["peers"]
     except Exception as e:
-        traceback.print_exc()
-        print("Skipping peer {} problems resolving: {}".format(
-            address, e.message))
+        # traceback.print_exc()
+        print("Skipping peer {} problems resolving: {}".format(address, e.message))
+        es.index(index="cgt", doc_type="steward", id=address,
+                 body={"domain": "unreachable", "peers": [], "submissions": [],
+                       "multihash": "", "address": address})
+        return []
 
 
 def crawl(es, address, timeout, depth):
@@ -78,7 +81,7 @@ def crawl(es, address, timeout, depth):
         for address in peers:
             crawl(es, address, timeout, depth-1)
     except Exception as e:
-        traceback.print_exc()
+        # traceback.print_exc()
         print("Skipping peer {} problems resolving: {}".format(address, e.message))
 
 
