@@ -1,0 +1,35 @@
+version: '2'
+services:
+  ipfs:
+    image: ipfs/go-ipfs:v0.4.3
+    # volumes:
+    #   - ./ipfs:/data/ipfs
+  cgtd:
+    image: robcurrie/cgtd:latest
+    links:
+      - ipfs
+  es:
+    image: elasticsearch
+    # volumes:
+    #   - ./data/es:/usr/share/elasticsearch/data
+  nginx:
+    image: nginx
+    ports:
+      - 5282:80
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+    volumes_from:
+      - www
+    links:
+      - ipfs
+      - cgtd
+      - es
+  search-cgt:
+    image: search-cgt
+    links:
+      - cgtd
+      - es
+  www:
+    image: search-cgt
+    volumes:
+      - ./www:/usr/share/nginx/html:ro
