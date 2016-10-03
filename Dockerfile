@@ -9,7 +9,4 @@ RUN pip install -r /app/requirements.txt
 
 ADD . /app
 
-# ENTRYPOINT ["python", "crawl.py"]
-# ENTRYPOINT ["cron", "-f"]
-CMD crond -l 2 -f
-
+ENTRYPOINT ["python", "crawl.py"]

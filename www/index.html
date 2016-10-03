@@ -2,43 +2,70 @@
 <html>
   <head>
     <title>Cancer Gene Trust Search</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="underscore-min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/2.7.9/cytoscape.min.js"></script>
     <script src="https://cdn.rawgit.com/cpettitt/dagre/v0.7.4/dist/dagre.min.js"></script>
     <script src="https://cdn.rawgit.com/cytoscape/cytoscape.js-dagre/1.1.2/cytoscape-dagre.js"></script>
-
     <script src="internet.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="152x152" href="images/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="images/favicon-16x16.png" sizes="16x16">
+    <link rel="mask-icon" href="images/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="theme-color" content="#ffffff">
 		<style>
-				#cy {
-					width: 100%;
-					height: 100%;
-					position: absolute;
-					top: 0px;
-					left: 0px;
-				}
+    #cy {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0px;
+      left: 0px;
+    }
+		.navbar-brand
+		{
+				position: absolute;
+				width: 100%;
+				left: 0;
+				top: 0;
+				text-align: center;
+				margin: auto;
+		}
+		.navbar-nav > li {
+				display: inline-block;
+				float:right;
+		}
 		</style>
   </head>
   <body>
-    <div id="progressDialog" class="modal fade" role="dialog">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-body">
-            <strong id="progress"></strong>
-          </div>
-        </div>
+		<nav class="navbar navbar-default">
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a class="navbar-brand" href="http://www.cancergenetrust.org">
+						<img src="images/logo_with_name.png" style="padding-left: 8px; height: 28px;">
+					</a>
+          <div id="title" class="navbar-brand" href="#">Search</div>
+				</div>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/cgtd/api#/default"><span class="glyphicon glyphicon-cog"></span></a></li>
+          </ul>
+			</div>
+		</nav>
+		<form id="search">
+      <div class="input-group">
+        <input type="text" class="form-control" id="query" placeholder="alive">
+        <span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span>
       </div>
-    </div>
+		</form>
 
-
-    <br/>
-		<div class="input-group">
-			<input type="text" class="form-control" id="query" placeholder="metastatic">
-			<span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span>
-		</div>
-
+		<div class="container">
     <div id="cy"></div>
+		</div>
   </body>
 </html>

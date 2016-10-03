@@ -26,4 +26,4 @@ reset:
 	curl localhost:9200/_cat/indices?v
 
 crawl:
-	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt $(address) -d 4 -t 10
+	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt $(address) -d 5 -t 20

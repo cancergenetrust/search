@@ -20,13 +20,11 @@ def update_submissions(es, steward, timeout):
                          parent=steward["address"], id=multihash):
             print("Adding submission {}".format(multihash))
             r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
-            if r.status_code == requests.codes.ok:
-                submission = r.json()
-                submission["steward"] = steward["address"]  # parent pointer
-                es.create(index="cgt", doc_type="submission", id=multihash,
-                          parent=steward["address"], body=submission)
-            else:
-                print("Problems getting submission {} : {}".format(multihash, r.status_code))
+            assert(r.status_code == requests.codes.ok)
+            submission = r.json()
+            submission["steward"] = steward["address"]  # parent pointer
+            es.create(index="cgt", doc_type="submission", id=multihash,
+                      parent=steward["address"], body=submission)
 
 
 def update_steward(es, address, timeout):
@@ -54,12 +52,12 @@ def update_steward(es, address, timeout):
                 print("Steward {} {} has not changed, skipping".format(steward["domain"], address))
             else:
                 print("Updating steward: {} {}".format(steward["domain"], address))
-                es.index(index="cgt", doc_type="steward", id=address, body=steward)
                 update_submissions(es, steward, timeout)
+                es.index(index="cgt", doc_type="steward", id=address, body=steward)
         else:
             print("New steward: {} {}".format(steward["domain"], address))
-            es.index(index="cgt", doc_type="steward", id=address, body=steward)
             update_submissions(es, steward, timeout)
+            es.index(index="cgt", doc_type="steward", id=address, body=steward)
 
         return steward["peers"]
     except Exception as e:

@@ -1,22 +1,15 @@
 $('document').ready(function() {
-	$('#query').keypress(function(event){
-		var keycode = (event.keyCode ? event.keyCode : event.which);
-		if(keycode == '13'){
-      $.getJSON("/es/_search?q=" + $(this).val(), function(results) {
-        console.log(results);
-        if (results.hits.total > 0) {
-          window.open("/cgtd/index.html?submission=" + results.hits.hits[0]._id);
-        }
-      });
-		}
+  $("#search").submit(function(event) {
+    event.preventDefault();
+    $.getJSON("/es/_search?q=" + $("#query").val(), function(results) {
+      console.log(results);
+      if (results.hits.total > 0) {
+        window.location.href = "/cgtd/index.html?submission=" + results.hits.hits[0]._id;
+      }
+    });
 	});
 
-	$("#progressDialog").modal("show");
-	$("#progress").html("Finding and authenticating stewards...");
-	// $.getJSON("/cgtd/v0/stewards", function(stewards) {
-	// $.getJSON("/stewards_temp.json", function(stewards) {
   $.getJSON("/es/cgt/steward/_search/?size=15", function(results) {
-		$("#progressDialog").modal("hide");
 		if (results.hits.total == 0) {
 			alert("No stewards found");
 		} else {
@@ -53,7 +46,7 @@ $('document').ready(function() {
 
       stewards = _.indexBy(results.hits.hits, '_id');
 
-			let addresses = _.keys(stewards);
+			var addresses = _.keys(stewards);
 			for (var i=0; i < addresses.length; i++) {
 				cy.add({data: {id: addresses[i],
 					label: stewards[addresses[i]]._source.submissions.length + "\n" +
@@ -72,7 +65,7 @@ $('document').ready(function() {
 			});
 
 			cy.on('tap', 'node', function(event) {
-				window.open("/cgtd/index.html?steward="+this.data("id"));
+        window.location.href = "/cgtd/index.html?steward=" + this.data("id");
 			});
 		}
 	});
