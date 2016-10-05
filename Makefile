@@ -5,7 +5,7 @@ es:
 	docker run -d -p 9200:9200 -p 9300:9300 \
 		-v /mnt/elasticsearch:/usr/share/elasticsearch/data \
 		--name=es elasticsearch:latest -Des.network.host=0.0.0.0
-	docker exec -it es plugin install jettro/elasticsearch-gui
+	# docker exec -it es plugin install jettro/elasticsearch-gui
 
 nginx:
 	docker run -d --name nginx \
@@ -26,4 +26,4 @@ reset:
 	curl localhost:9200/_cat/indices?v
 
 crawl:
-	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt $(address) -d 5 -t 20
+	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt -d 5 -t 20 -i 5

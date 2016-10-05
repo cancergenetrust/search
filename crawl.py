@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+import time
 import argparse
 # import traceback
 import requests
@@ -95,6 +96,8 @@ def main():
                         help="Seconds to wait for IPNS to resolve a steward")
     parser.add_argument("-d", "--depth", type=int, default=2,
                         help="How deep to follow the peer graph")
+    parser.add_argument("-i", "--interval", type=int, default=0,
+                        help="Minutes between crawls")
     parser.add_argument("address", nargs='?', default="",
                         help="Address of steward to start crawl")
     args = parser.parse_args()
@@ -111,11 +114,18 @@ def main():
         }
     })
 
-    if args.address:
-        crawl(es, args.address, args.timeout, args.depth)
-    else:
-        # Default to crawling the steward attached to the linked ipfs
-        crawl(es, requests.get("http://ipfs:5001/api/v0/id").json()["ID"], args.timeout, args.depth)
+    while True:
+        if args.address:
+            crawl(es, args.address, args.timeout, args.depth)
+        else:
+            # Default to crawling the steward attached to the linked ipfs
+            crawl(es, requests.get("http://ipfs:5001/api/v0/id").json()["ID"],
+                  args.timeout, args.depth)
+        if args.interval:
+            print("Sleeping for {} minutes...".format(args.interval))
+            time.sleep(args.interval * 60)
+        else:
+            break
 
 
 if __name__ == '__main__':
