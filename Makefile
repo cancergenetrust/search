@@ -12,7 +12,7 @@ nginx:
 		--link cgtd:cgtd \
 		--link ipfs:ipfs \
 		--link es:es \
-		-p 5282:80 \
+		-p 80:80 \
 		-v `pwd`/default.conf:/etc/nginx/conf.d/default.conf:ro \
 		-v `pwd`/www:/usr/share/nginx/html:ro \
 		nginx
