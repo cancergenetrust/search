@@ -25,5 +25,8 @@ reset:
 	curl -X DELETE localhost:9200/cgt
 	curl localhost:9200/_cat/indices?v
 
-crawl:
-	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt -d 5 -t 20 -i 5
+run:
+	docker run -d --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5
+
+debug:
+	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK

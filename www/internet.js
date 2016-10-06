@@ -9,7 +9,7 @@ $('document').ready(function() {
     });
 	});
 
-  $.getJSON("/es/cgt/steward/_search/?size=15", function(results) {
+  $.getJSON("/es/cgt/steward/_search/?size=1000", function(results) {
 		if (results.hits.total == 0) {
 			alert("No stewards found");
 		} else {

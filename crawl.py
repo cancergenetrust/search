@@ -1,12 +1,11 @@
 #!/usr/bin/env python2.7
 import time
 import argparse
-# import traceback
 import requests
 from elasticsearch import Elasticsearch
 
 
-def update_submissions(es, steward, timeout):
+def update_submissions(es, steward, args):
     """
     Add any submissions that don't already exist in the index.
 
@@ -20,7 +19,7 @@ def update_submissions(es, steward, timeout):
         if not es.exists(index="cgt", doc_type="submission",
                          parent=steward["address"], id=multihash):
             print("Adding submission {}".format(multihash))
-            r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
+            r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=args.timeout)
             assert(r.status_code == requests.codes.ok)
             submission = r.json()
             submission["steward"] = steward["address"]  # parent pointer
@@ -28,60 +27,58 @@ def update_submissions(es, steward, timeout):
                       parent=steward["address"], body=submission)
 
 
-def update_steward(es, address, timeout):
+def index_steward(es, steward, args):
     """
-    Resolve and update the steward and submissions documents and
-    return its peer list.
+    Update the steward's index in elastic search
     """
-    print("Updating steward {}".format(address))
-    try:
-        r = requests.get("http://ipfs:5001/api/v0/name/resolve?arg={}".format(
-            address), timeout=timeout)
-        assert(r.status_code == requests.codes.ok)
-        multihash = r.json()["Path"].rsplit('/')[-1]
-        print("Resolved to {}".format(multihash))
-        r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
-        assert(r.status_code == requests.codes.ok)
-        steward = r.json()
-        steward["multihash"] = multihash  # so we can easily detect changes in submission list
-        steward["address"] = address  # convenience for guis
-        print("Found {} Submissions".format(len(steward["submissions"])))
-
-        if es.exists(index="cgt", doc_type="steward", id=address):
-            res = es.get(index="cgt", doc_type="steward", id=address, fields="multihash")
-            if res["fields"]["multihash"][0] == multihash:
-                print("Steward {} {} has not changed, skipping".format(steward["domain"], address))
-            else:
-                print("Updating steward: {} {}".format(steward["domain"], address))
-                update_submissions(es, steward, timeout)
-                es.index(index="cgt", doc_type="steward", id=address, body=steward)
+    print("Indexing steward {}".format(steward["domain"]))
+    if es.exists(index="cgt", doc_type="steward", id=steward["address"]):
+        res = es.get(index="cgt", doc_type="steward", id=steward["address"], fields="multihash")
+        if res["fields"]["multihash"][0] == steward["multihash"]:
+            print("Steward {} has not changed, skipping".format(steward["domain"]))
         else:
-            print("New steward: {} {}".format(steward["domain"], address))
-            update_submissions(es, steward, timeout)
-            es.index(index="cgt", doc_type="steward", id=address, body=steward)
-
-        return steward["peers"]
-    except Exception as e:
-        # traceback.print_exc()
-        print("Skipping peer {} problems resolving: {}".format(address, e.message))
-        es.index(index="cgt", doc_type="steward", id=address,
-                 body={"domain": "unreachable", "peers": [], "submissions": [],
-                       "multihash": "", "address": address})
-        return []
+            print("Updating steward: {}".format(steward["domain"]))
+            if not args.skip_submissions:
+                update_submissions(es, steward, args)
+            es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
+    else:
+        print("New steward: {} {}".format(steward["domain"], steward["address"]))
+        if not args.skip_submissions:
+            update_submissions(es, steward, args)
+        es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
 
 
-def crawl(es, address, timeout, depth):
-    if depth == 0:
-        return
+def find_stewards(start, timeout):
+    """
+    Find the address of all stewards via breadth first search
+    """
+    stewards, queue = {}, [start]
+    while queue:
+        address = queue.pop(0)
+        if address not in stewards:
+            try:
+                # Resolve its address
+                r = requests.get("http://ipfs:5001/api/v0/name/resolve?arg={}".format(
+                    address), timeout=timeout)
+                assert(r.status_code == requests.codes.ok)
+                multihash = r.json()["Path"].rsplit('/')[-1]
+                print("Resolved to {}".format(multihash))
 
-    try:
-        print("Crawling {} depth = {}".format(address, depth))
-        peers = update_steward(es, address, timeout)
-        for address in peers:
-            crawl(es, address, timeout, depth-1)
-    except Exception as e:
-        # traceback.print_exc()
-        print("Skipping peer {} problems resolving: {}".format(address, e.message))
+                # Get its index
+                r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
+                assert(r.status_code == requests.codes.ok)
+                steward = r.json()
+                print(steward["domain"])
+                steward["multihash"] = multihash  # so we can easily detect changes
+                steward["address"] = address  # convenience for guis
+
+                # Add to list of stewards
+                stewards[address] = steward
+                queue.extend(set(steward["peers"]) - set(stewards.keys()))
+            except Exception as e:
+                print("Skipping peer {} problems resolving: {}".format(address, e.message))
+
+    return stewards
 
 
 def main():
@@ -94,8 +91,8 @@ def main():
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("-t", "--timeout", type=int, default=5,
                         help="Seconds to wait for IPNS to resolve a steward")
-    parser.add_argument("-d", "--depth", type=int, default=2,
-                        help="How deep to follow the peer graph")
+    parser.add_argument("-s", "--skip_submissions", action='store_true', default=False,
+                        help="Skip submissions, only find stewards")
     parser.add_argument("-i", "--interval", type=int, default=0,
                         help="Minutes between crawls")
     parser.add_argument("address", nargs='?', default="",
@@ -103,6 +100,8 @@ def main():
     args = parser.parse_args()
 
     es = Elasticsearch(hosts=["es"])
+
+    # Create parent child relationship between stewards and submissions
     es.indices.create(index="cgt", ignore=400, body={
         "mappings": {
             "steward": {},
@@ -116,11 +115,23 @@ def main():
 
     while True:
         if args.address:
-            crawl(es, args.address, args.timeout, args.depth)
+            address = args.address
         else:
-            # Default to crawling the steward attached to the linked ipfs
-            crawl(es, requests.get("http://ipfs:5001/api/v0/id").json()["ID"],
-                  args.timeout, args.depth)
+            address = requests.get("http://ipfs:5001/api/v0/id").json()["ID"]
+        start = time.time()
+        print("Starting crawl at {} from {}".format(time.asctime(time.localtime(start)), address))
+        stewards = find_stewards(address, args.timeout)
+        print("Found {} stewards".format(len(stewards)))
+
+        for address, steward in stewards.iteritems():
+            try:
+                index_steward(es, steward, args)
+            except Exception as e:
+                print("Problems indexing {}: {}".format(steward["domain"], e.message))
+
+        end = time.time()
+        print("Finished crawl at {} taking {} seconds".format(
+            time.asctime(time.localtime(end)), end - start))
         if args.interval:
             print("Sleeping for {} minutes...".format(args.interval))
             time.sleep(args.interval * 60)
