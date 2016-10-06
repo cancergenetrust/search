@@ -10,7 +10,7 @@
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/2.7.9/cytoscape.min.js"></script>
     <script src="https://cdn.rawgit.com/cpettitt/dagre/v0.7.4/dist/dagre.min.js"></script>
     <script src="https://cdn.rawgit.com/cytoscape/cytoscape.js-dagre/1.1.2/cytoscape-dagre.js"></script>
-    <script src="internet.js"></script>
+    <script src="network.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
 
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
@@ -21,56 +21,42 @@
     <link rel="mask-icon" href="images/safari-pinned-tab.svg" color="#5bbad5">
     <meta name="theme-color" content="#ffffff">
 		<style>
-    #internet {
+    #network {
       width: 100%;
       height: 100%;
       position: absolute;
       top: 0px;
       left: 0px;
     }
-		.navbar-brand
-		{
-				position: absolute;
-				width: 100%;
-				left: 0;
-				top: 0;
-				text-align: center;
-				margin: auto;
-		}
-		.navbar-nav > li {
-				display: inline-block;
-				float:right;
-		}
 		</style>
   </head>
   <body>
-		<nav class="navbar navbar-default">
-			<div class="container-fluid">
-				<div class="navbar-header">
-					<a class="navbar-brand" href="http://www.cancergenetrust.org">
-						<img src="images/logo_with_name.png" style="padding-left: 8px; height: 28px;">
-					</a>
-          <div id="title" class="navbar-brand" href="#">Search</div>
-				</div>
-          <ul class="nav navbar-nav navbar-right">
-            <li><a href="/cgtd/api#/default"><span class="glyphicon glyphicon-cog"></span></a></li>
-          </ul>
-			</div>
-		</nav>
+    <a href="http://www.cancergenetrust.org">
+      <img src="images/logo_with_name.png" style="padding: 8px; height: 64px;" class="center-block img-responsive"/>
+    </a>
+
 		<form id="search">
-      <div class="input-group">
-        <input type="text" class="form-control" id="query" placeholder="metastatic">
-        <span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span>
-      </div>
+			<div class="row">
+				<div class="col-xs-3">
+				</div>
+				<div class="col-xs-6">
+					<div class="input-group">
+						<input type="text" class="form-control" id="query" placeholder="metastatic">
+						<span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span>
+					</div>
+				</div>
+				<div class="col-xs-3">
+				</div>
+			</div>
 		</form>
 
-		<div class="container">
-    <div id="internet"></div>
-    <div id="results"></div>
+    <div id="network"></div>
+		<p/>
+    <div id="results" class="container"></div>
     <script type="text/html" id="results-template">
 			<div class="panel panel-default">
 				<div class="panel-heading">
-          <h3 class="panel-title">About <%= results.hits.total %> results</h3>
+          <h3 class="panel-title"><%= results.hits.total %> results</h3>
 				</div>
         <ul class="list-group">
         <% _.each(results.hits.hits, function(hit) { %>
@@ -83,6 +69,5 @@
         </ul>
 			</div>
     </script>
-		</div>
   </body>
 </html>
