@@ -18,6 +18,7 @@ nginx:
 		nginx
 
 stop:
+	docker stop crawler || true && docker rm crawler || true
 	docker stop es || true && docker rm es || true
 	docker stop nginx || true && docker rm nginx || true
 
@@ -26,7 +27,7 @@ reset:
 	curl localhost:9200/_cat/indices?v
 
 run:
-	docker run -d --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5
+	docker run -d --name crawler --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5
 
 debug:
 	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK

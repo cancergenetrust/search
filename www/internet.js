@@ -1,10 +1,16 @@
 $('document').ready(function() {
+  var resultsTemplate = _.template($("#results-template").html());
+
   $("#search").submit(function(event) {
     event.preventDefault();
     $.getJSON("/es/_search?q=" + $("#query").val(), function(results) {
-      console.log(results);
       if (results.hits.total > 0) {
-        window.location.href = "/cgtd/index.html?submission=" + results.hits.hits[0]._id;
+        console.log(results);
+        $("#internet").hide();
+        $("#results").html(results);
+        $("#results").html(resultsTemplate({results: results}));
+        
+        // window.location.href = "/cgtd/index.html?submission=" + results.hits.hits[0]._id;
       }
     });
 	});
@@ -14,7 +20,7 @@ $('document').ready(function() {
 			alert("No stewards found");
 		} else {
 			var cy = cytoscape({
-				container: document.getElementById('cy'),
+				container: document.getElementById('internet'),
 				style: [
 					{
 						selector: 'node',
