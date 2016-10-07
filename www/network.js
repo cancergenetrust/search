@@ -4,14 +4,31 @@ $('document').ready(function() {
   $("#query").focus();
 
   $("#search").submit(function(event) {
+		var query = {
+        "query": {
+            "match": {
+                "_all": {
+                    "query": $("#query").val(),
+                    "operator": "and"
+                }
+            }
+        },
+        "size": 100 
+    }
+
+		$.ajax({ 
+			url: "/es/cgt/submission/_search", 
+			type: "POST", 
+			dataType: "json", 
+			data: JSON.stringify(query), 
+			success: function(results) {
+				console.log(results);
+				$("#network").hide();
+				$("#results").html(resultsTemplate({results: results}));
+			}
+		}); 
+
     event.preventDefault();
-    $.getJSON("/es/_search?q=" + $("#query").val(), function(results) {
-      if (results.hits.total > 0) {
-        console.log(results);
-        $("#network").hide();
-        $("#results").html(resultsTemplate({results: results}));
-      }
-    });
 	});
 
   $.getJSON("/es/cgt/steward/_search/?size=1000", function(results) {
