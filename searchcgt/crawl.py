@@ -2,7 +2,10 @@
 import time
 import argparse
 import requests
+import traceback
 from elasticsearch import Elasticsearch
+
+from annotate import vcf2genes
 
 
 def update_submissions(es, steward, args):
@@ -23,6 +26,22 @@ def update_submissions(es, steward, args):
             assert(r.status_code == requests.codes.ok)
             submission = r.json()
             submission["steward"] = steward["address"]  # parent pointer
+
+            # Annotate based on files
+            genes = set()
+            for f in submission["files"]:
+                if f["name"].endswith(".vcf"):
+                    print("Annotating {}".format(f["name"]))
+                    try:
+                        r = requests.get("http://ipfs:8080/ipfs/{}".format(f["multihash"]),
+                                         timeout=args.timeout)
+                        assert(r.status_code == requests.codes.ok)
+                        genes.update(vcf2genes(r.content))
+                    except:
+                        print("Problems summarizing vcf file")
+                        traceback.print_exc()
+            submission["_genes"] = list(genes)  # _ so we don't clash with field
+            print("Added annotation {}".format(submission["_genes"]))
             es.create(index="cgt", doc_type="submission", id=multihash,
                       parent=steward["address"], body=submission)
 

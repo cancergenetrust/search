@@ -1,0 +1,21 @@
+FROM alpine:latest
+
+# RUN echo -e '@edge http://nl.alpinelinux.org/alpine/edge/main\n@community http://nl.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories
+# RUN apk update
+# RUN apk update && apk upgrade && apk add --update bash python python-dev py-numpy@community
+
+RUN apk add --no-cache python-dev py-pip g++ && \
+    ln -s /usr/include/locale.h /usr/include/xlocale.h && \
+    pip install numpy==1.11.1 cython==0.24.1
+
+# RUN apk add --update python py-pip
+# RUN pip install --upgrade pip
+
+
+WORKDIR /app
+ADD ./requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
+
+ADD . /app
+
+ENTRYPOINT ["python", "crawl.py"]

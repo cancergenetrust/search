@@ -1,3 +1,9 @@
+ifdef NGINXPORT
+	nginx_port=$$NGINXPORT
+else
+	nginx_port=80
+endif
+
 build:
 	docker build -t search-cgt .
 
@@ -5,14 +11,13 @@ es:
 	docker run -d -p 9200:9200 -p 9300:9300 \
 		-v /mnt/elasticsearch:/usr/share/elasticsearch/data \
 		--name=es elasticsearch:latest -Des.network.host=0.0.0.0
-	# docker exec -it es plugin install jettro/elasticsearch-gui
 
 nginx:
 	docker run -d --name nginx \
 		--link cgtd:cgtd \
 		--link ipfs:ipfs \
 		--link es:es \
-		-p 80:80 \
+		-p $(nginx_port):80 \
 		-v `pwd`/default.conf:/etc/nginx/conf.d/default.conf:ro \
 		-v `pwd`/www:/usr/share/nginx/html:ro \
 		nginx
@@ -26,8 +31,21 @@ reset:
 	curl -X DELETE localhost:9200/cgt
 	curl localhost:9200/_cat/indices?v
 
-run:
-	docker run -d --name crawler --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5
+
+test:
+	docker run -it --rm \
+		--entrypoint=py.test \
+		-v `pwd`:/usr/src/app:ro \
+		-v `pwd`/pyensembl:/root/.cache/pyensembl \
+		--link ipfs:ipfs --link es:es search-cgt -p no:cacheprovider -s -x
 
 debug:
-	docker run -it --rm -v `pwd`:/app:ro --link ipfs:ipfs --link es:es search-cgt -t 60 -i 5 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+	docker run -it --rm \
+		-v `pwd`:/usr/src/app:ro \
+		-v `pwd`/pyensembl:/root/.cache/pyensembl \
+		--link ipfs:ipfs --link es:es search-cgt -t 60 -i 5
+
+run:
+	docker run -d --name crawler \
+		-v `pwd`/pyensembl:/root/.cache/pyensembl \
+		--link ipfs:ipfs --link es:es search-cgt -t 60 -i 5

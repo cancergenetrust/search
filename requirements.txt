@@ -1,2 +1,3 @@
-ipfs-api
 elasticsearch-dsl
+pyensembl
+pytest
