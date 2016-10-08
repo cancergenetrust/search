@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 import time
+import logging
 import argparse
 import requests
 import traceback
@@ -21,7 +22,7 @@ def update_submissions(es, steward, args):
     for multihash in steward["submissions"]:
         if not es.exists(index="cgt", doc_type="submission",
                          parent=steward["address"], id=multihash):
-            print("Adding submission {}".format(multihash))
+            logging.info("Adding submission {}".format(multihash))
             r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=args.timeout)
             assert(r.status_code == requests.codes.ok)
             submission = r.json()
@@ -31,17 +32,19 @@ def update_submissions(es, steward, args):
             genes = set()
             for f in submission["files"]:
                 if f["name"].endswith(".vcf"):
-                    print("Annotating {}".format(f["name"]))
+                    logging.info("Annotating {}".format(f["name"]))
                     try:
                         r = requests.get("http://ipfs:8080/ipfs/{}".format(f["multihash"]),
                                          timeout=args.timeout)
                         assert(r.status_code == requests.codes.ok)
                         genes.update(vcf2genes(r.content))
                     except:
-                        print("Problems summarizing vcf file")
+                        logging.error("Problems summarizing vcf file: {} {}".format(
+                            f["name"], f["multihash"]))
                         traceback.print_exc()
-            submission["_genes"] = list(genes)  # _ so we don't clash with field
-            print("Added annotation {}".format(submission["_genes"]))
+            if genes:
+                submission["_genes"] = list(genes)  # _ so we don't clash with field
+                logging.info("Added annotation {}".format(submission["_genes"]))
             es.create(index="cgt", doc_type="submission", id=multihash,
                       parent=steward["address"], body=submission)
 
@@ -50,18 +53,18 @@ def index_steward(es, steward, args):
     """
     Update the steward's index in elastic search
     """
-    print("Indexing steward {}".format(steward["domain"]))
+    logging.info("Indexing steward {}".format(steward["domain"]))
     if es.exists(index="cgt", doc_type="steward", id=steward["address"]):
         res = es.get(index="cgt", doc_type="steward", id=steward["address"], fields="multihash")
         if res["fields"]["multihash"][0] == steward["multihash"]:
-            print("Steward {} has not changed, skipping".format(steward["domain"]))
+            logging.info("Steward {} has not changed, skipping".format(steward["domain"]))
         else:
-            print("Updating steward: {}".format(steward["domain"]))
+            logging.info("Updating steward: {}".format(steward["domain"]))
             if not args.skip_submissions:
                 update_submissions(es, steward, args)
             es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
     else:
-        print("New steward: {} {}".format(steward["domain"], steward["address"]))
+        logging.info("New steward: {} {}".format(steward["domain"], steward["address"]))
         if not args.skip_submissions:
             update_submissions(es, steward, args)
         es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
@@ -81,13 +84,13 @@ def find_stewards(start, timeout):
                     address), timeout=timeout)
                 assert(r.status_code == requests.codes.ok)
                 multihash = r.json()["Path"].rsplit('/')[-1]
-                print("Resolved to {}".format(multihash))
+                logging.info("Resolved to {}".format(multihash))
 
                 # Get its index
                 r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
                 assert(r.status_code == requests.codes.ok)
                 steward = r.json()
-                print(steward["domain"])
+                logging.info(steward["domain"])
                 steward["multihash"] = multihash  # so we can easily detect changes
                 steward["address"] = address  # convenience for guis
 
@@ -95,7 +98,7 @@ def find_stewards(start, timeout):
                 stewards[address] = steward
                 queue.extend(set(steward["peers"]) - set(stewards.keys()))
             except Exception as e:
-                print("Skipping peer {} problems resolving: {}".format(address, e.message))
+                logging.error("Skipping peer {} problems resolving: {}".format(address, e.message))
 
     return stewards
 
@@ -138,21 +141,22 @@ def main():
         else:
             address = requests.get("http://ipfs:5001/api/v0/id").json()["ID"]
         start = time.time()
-        print("Starting crawl at {} from {}".format(time.asctime(time.localtime(start)), address))
+        logging.info("Starting crawl at {} from {}".format(
+            time.asctime(time.localtime(start)), address))
         stewards = find_stewards(address, args.timeout)
-        print("Found {} stewards".format(len(stewards)))
+        logging.info("Found {} stewards".format(len(stewards)))
 
         for address, steward in stewards.iteritems():
             try:
                 index_steward(es, steward, args)
             except Exception as e:
-                print("Problems indexing {}: {}".format(steward["domain"], e.message))
+                logging.error("Problems indexing {}: {}".format(steward["domain"], e.message))
 
         end = time.time()
-        print("Finished crawl at {} taking {} seconds".format(
+        logging.info("Finished crawl at {} taking {} seconds".format(
             time.asctime(time.localtime(end)), end - start))
         if args.interval:
-            print("Sleeping for {} minutes...".format(args.interval))
+            logging.info("Sleeping for {} minutes...".format(args.interval))
             time.sleep(args.interval * 60)
         else:
             break
