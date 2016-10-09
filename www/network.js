@@ -60,41 +60,40 @@ $('document').ready(function() {
   $("#query").focus();
 
   $("#search").submit(function(event) {
-		var query = {
+    query = $("#query").val(); 
+		var request = {
         "query": {
             "match": {
                 "_all": {
-                    "query": $("#query").val(),
+                    "query": query,
                     "operator": "and"
                 }
             }
         },
         "size": 100 
     }
-
 		$.ajax({ 
 			url: "/es/cgt/submission/_search", 
 			type: "POST", 
 			dataType: "json", 
-			data: JSON.stringify(query), 
+			data: JSON.stringify(request), 
 			success: function(results) {
 				console.log(results);
 				$("#network").hide();
 				$("#results").html(resultsTemplate({results: results}));
 			}
 		}); 
-
     event.preventDefault();
+    ga('send', 'event', 'submissions', 'search', query);
 	});
 
-  // $.getJSON("/es/cgt/steward/_search/?size=1000", function(results) {
   $.ajax({ 
     url: "/es/cgt/steward/_search/?size=1000", 
     type: "GET", 
-    error: function(error) { alert("Error, is the index blank?"); },
+    error: function(error) { alert("Search index error, likely undergoing maintenance."); },
     success: function(results) {
       if (results.hits.total == 0) {
-        alert("No stewards found");
+        alert("Search index empty, likely undergoing maintenance.");
       } else {
         draw_network(_.indexBy(results.hits.hits, '_id'));
       }
