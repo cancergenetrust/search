@@ -7,9 +7,7 @@
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="underscore-min.js"></script>
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/2.7.9/cytoscape.min.js"></script>
-    <script src="https://cdn.rawgit.com/cpettitt/dagre/v0.7.4/dist/dagre.min.js"></script>
-    <script src="https://cdn.rawgit.com/cytoscape/cytoscape.js-dagre/1.1.2/cytoscape-dagre.js"></script>
+    <script src='http://d3js.org/d3.v3.js'></script>
     <script src="network.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
 
@@ -22,14 +20,24 @@
     <meta name="theme-color" content="#ffffff">
 
 		<style>
-    #network {
-      width: 100%;
-      height: 85%;
-      position: absolute;
-      top: 15%;
-      left: 0px;
-    }
-		</style>
+		path.link {
+			fill: none;
+			stroke: #666;
+			stroke-width: 1.5px;
+		}
+
+		circle {
+			fill: #ccc;
+			stroke: #fff;
+			stroke-width: 1.5px;
+		}
+
+		text {
+			fill: #000;
+			font: 16px sans-serif;
+			pointer-events: none;
+		}
+    </style>
 
 		<script>
 		window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
@@ -61,7 +69,6 @@
 			</div>
 		</form>
 
-    <div id="network"></div>
 		<p/>
     <div id="results" class="container"></div>
     <script type="text/html" id="results-template">
