@@ -123,7 +123,6 @@ $('document').ready(function() {
       dataType: "json", 
       data: JSON.stringify(request), 
       success: function(results) {
-        console.log(results);
         $("svg").hide();
         $("#results").html(resultsTemplate({results: results}));
       }
