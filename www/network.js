@@ -5,8 +5,15 @@ function draw_network(stewards) {
   for (var i=0; i < addresses.length; i++) {
     var peers = stewards[addresses[i]]._source.peers;
     for (var j=0; j < peers.length; j++) {
-      links.push({source: stewards[addresses[i]], 
-        target: stewards[peers[j]], value: 1.0});
+      // Make sure source and destintation exist
+      if (!(addresses[i] in stewards)) {
+        console.log("Missing steward " + addresses[i]);
+      } else if (!(peers[j] in stewards)) {
+        console.log("Missing steward " + peers[j]);
+      } else {
+        links.push({source: stewards[addresses[i]], 
+          target: stewards[peers[j]], value: 1.0});
+      }
     }
   }
 
