@@ -9,6 +9,7 @@
     <script src="underscore-min.js"></script>
     <script src='http://d3js.org/d3.v3.js'></script>
     <script src="network.js"></script>
+    <script src="index.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
 
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
@@ -74,7 +75,10 @@
     <script type="text/html" id="results-template">
 			<div class="panel panel-default">
 				<div class="panel-heading">
-          <h3 class="panel-title"><%= results.hits.total %> results</h3>
+          <h3 class="panel-title">
+            <%= results.hits.total %> results
+            <a id="download" href="#" download="results.json"><span class="glyphicon glyphicon-download"></span></a>
+          </h3>
 				</div>
         <ul class="list-group">
         <% _.each(results.hits.hits, function(hit) { %>
