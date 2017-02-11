@@ -1,5 +1,6 @@
-pyensembl
 pytest
 uwsgi
 requests
 hug
+elasticsearch
+pyensembl

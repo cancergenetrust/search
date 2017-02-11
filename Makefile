@@ -12,8 +12,7 @@ shell:
 
 crawl:
 	# Manual crawl starting at search.cancergenetrust.org
-	docker exec -it searchcgt_search_1 python search-cgt/crawl.py \
-		--skip_submissions QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+	docker exec -it searchcgt_search_1 python search-cgt/crawl.py QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
 reset:
 	# Delete the elastic search index forcing a rebuild

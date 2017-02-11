@@ -101,9 +101,9 @@ def index_steward(es, steward, args):
             es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
     else:
         logging.info("New steward: {} {}".format(steward["domain"], steward["address"]))
+        es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
         if not args.skip_submissions:
             update_submissions(es, steward, args)
-        es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
 
 
 def main():
@@ -117,45 +117,58 @@ def main():
                         help="Seconds to wait for IPNS to resolve a steward")
     parser.add_argument("-s", "--skip_submissions", action='store_true', default=False,
                         help="Skip submissions, only find stewards")
+    parser.add_argument("-i", "--interval", type=int, default=0,
+                        help="Minutes between crawls, default crawls once and exits")
     parser.add_argument("address", nargs='?', default="",
                         help="Address of steward to start crawl")
     args = parser.parse_args()
 
-    es = Elasticsearch(hosts=["es"])
+    while True:
+        start = time.time()
+        logging.info("Starting crawl at {}".format(time.asctime(time.localtime(start))))
 
-    # Create parent child relationship between stewards and submissions
-    es.indices.create(index="cgt", ignore=400, body={
-        "mappings": {
-            "steward": {},
-            "submission": {
-                "_parent": {
-                    "type": "steward"
-                }
-            }
-        }
-    })
-
-    start = time.time()
-    logging.info("Starting crawl at {}".format(time.asctime(time.localtime(start))))
-
-    if args.address:
-        address = args.address
-    else:
-        # Default to starting with the local cgtd
-        address = requests.get("http://ipfs:5001/api/v0/id").json()["ID"]
-    logging.info("Starting at {}".format(address))
-    stewards = find_stewards(address, args.timeout)
-    logging.info("Found {} stewards".format(len(stewards)))
-
-    for address, steward in stewards.items():
         try:
-            index_steward(es, steward, args)
-        except Exception as e:
-            logging.error("Problems indexing {}: {}".format(steward["domain"], e))
+            es = Elasticsearch(hosts=["es"])
 
-    end = time.time()
-    logging.info("Finished crawl at {} taking {} seconds".format(
-        time.asctime(time.localtime(end)), end - start))
+            # Create parent child relationship between stewards and submissions
+            # Every time in case the index has been deleted for a rebuild
+            es.indices.create(index="cgt", ignore=400, body={
+                "mappings": {
+                    "steward": {},
+                    "submission": {
+                        "_parent": {
+                            "type": "steward"
+                        }
+                    }
+                }
+            })
+
+            if args.address:
+                address = args.address
+            else:
+                # Default to starting with the local cgtd
+                address = requests.get("http://ipfs:5001/api/v0/id").json()["ID"]
+            logging.info("Starting at {}".format(address))
+            stewards = find_stewards(address, args.timeout)
+            logging.info("Found {} stewards".format(len(stewards)))
+
+            for address, steward in stewards.items():
+                try:
+                    index_steward(es, steward, args)
+                except Exception as e:
+                    logging.error("Problems indexing {}: {}".format(steward["domain"], e))
+
+            end = time.time()
+            logging.info("Finished crawl at {} taking {} seconds".format(
+                time.asctime(time.localtime(end)), end - start))
+        except Exception as e:
+            logging.error("Problems crawling: {}".format(e))
+
+        if args.interval:
+            logging.info("Sleeping for {} minutes...".format(args.interval))
+            time.sleep(args.interval * 60)
+        else:
+            break
 
 
 if __name__ == '__main__':

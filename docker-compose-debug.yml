@@ -7,6 +7,16 @@ services:
   es:
     image: elasticsearch
 
+  crawl:
+    image: robcurrie/search-cgt
+    links:
+      - ipfs
+      - es
+    volumes:
+      - ./pyensembl:/root/.cache/pyensembl
+      - .:/usr/src/app
+    entrypoint: python search-cgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+
   search:
     image: robcurrie/search-cgt
     ports:
