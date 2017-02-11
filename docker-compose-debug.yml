@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/go-ipfs
+
+  es:
+    image: elasticsearch
+
+  search:
+    image: robcurrie/search-cgt
+    ports:
+      - "5000:5000"
+    links:
+      - ipfs
+      - es
+
+    # Build and run out of local directory with auto-reload
+    build: .
+    volumes:
+      - .:/usr/src/app
+    entrypoint: uwsgi --ini uwsgi.ini --honour-stdin --python-autoreload=1 --processes=1 --threads=1

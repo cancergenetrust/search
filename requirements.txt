@@ -1,3 +1,6 @@
 elasticsearch-dsl
 pyensembl
 pytest
+Flask
+uwsgi
+requests
