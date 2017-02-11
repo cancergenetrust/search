@@ -1,5 +1,7 @@
 #!/usr/bin/env python2.7
+import sys
 import time
+import datetime
 import logging
 import argparse
 import requests
@@ -7,6 +9,40 @@ import traceback
 from elasticsearch import Elasticsearch
 
 from annotate import vcf2genes
+
+
+def find_stewards(start, timeout):
+    """
+    Find the address of all stewards via breadth first search
+    """
+    stewards, queue = {}, [start]
+    while queue:
+        address = queue.pop(0)
+        if address not in stewards:
+            try:
+                # Resolve its address
+                r = requests.get("http://ipfs:5001/api/v0/name/resolve?arg={}".format(
+                    address), timeout=timeout)
+                assert(r.status_code == requests.codes.ok)
+                multihash = r.json()["Path"].rsplit('/')[-1]
+                logging.info("Resolved to {}".format(multihash))
+
+                # Get its index
+                r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
+                assert(r.status_code == requests.codes.ok)
+                steward = r.json()
+                logging.info(steward["domain"])
+                steward["multihash"] = multihash  # so we can easily detect changes
+                steward["address"] = address  # convenience for guis
+                steward["resolved"] = datetime.datetime.utcnow().isoformat()
+
+                # Add to list of stewards
+                stewards[address] = steward
+                queue.extend(set(steward["peers"]) - set(stewards.keys()))
+            except Exception as e:
+                logging.error("Skipping peer {} problems resolving: {}".format(address, e.message))
+
+    return stewards
 
 
 def update_submissions(es, steward, args):
@@ -70,53 +106,17 @@ def index_steward(es, steward, args):
         es.index(index="cgt", doc_type="steward", id=steward["address"], body=steward)
 
 
-def find_stewards(start, timeout):
-    """
-    Find the address of all stewards via breadth first search
-    """
-    stewards, queue = {}, [start]
-    while queue:
-        address = queue.pop(0)
-        if address not in stewards:
-            try:
-                # Resolve its address
-                r = requests.get("http://ipfs:5001/api/v0/name/resolve?arg={}".format(
-                    address), timeout=timeout)
-                assert(r.status_code == requests.codes.ok)
-                multihash = r.json()["Path"].rsplit('/')[-1]
-                logging.info("Resolved to {}".format(multihash))
-
-                # Get its index
-                r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=timeout)
-                assert(r.status_code == requests.codes.ok)
-                steward = r.json()
-                logging.info(steward["domain"])
-                steward["multihash"] = multihash  # so we can easily detect changes
-                steward["address"] = address  # convenience for guis
-
-                # Add to list of stewards
-                stewards[address] = steward
-                queue.extend(set(steward["peers"]) - set(stewards.keys()))
-            except Exception as e:
-                logging.error("Skipping peer {} problems resolving: {}".format(address, e.message))
-
-    return stewards
-
-
 def main():
     """
     Cancer Gene Trust Crawler
 
-    Crawls the CGT build an elastic search index of all stewards and,f.v
-    submissions.
+    Crawls the CGT build an elastic search index stewards and submissions
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
-    parser.add_argument("-t", "--timeout", type=int, default=5,
+    parser.add_argument("-t", "--timeout", type=int, default=20,
                         help="Seconds to wait for IPNS to resolve a steward")
     parser.add_argument("-s", "--skip_submissions", action='store_true', default=False,
                         help="Skip submissions, only find stewards")
-    parser.add_argument("-i", "--interval", type=int, default=0,
-                        help="Minutes between crawls")
     parser.add_argument("address", nargs='?', default="",
                         help="Address of steward to start crawl")
     args = parser.parse_args()
@@ -126,7 +126,12 @@ def main():
     # Create parent child relationship between stewards and submissions
     es.indices.create(index="cgt", ignore=400, body={
         "mappings": {
-            "steward": {},
+            "steward": {
+                "resolved": {
+                    "type": "date",
+                    "format": "strict_date_optional_time"
+                }
+            },
             "submission": {
                 "_parent": {
                     "type": "steward"
@@ -135,33 +140,29 @@ def main():
         }
     })
 
-    while True:
-        if args.address:
-            address = args.address
-        else:
-            address = requests.get("http://ipfs:5001/api/v0/id").json()["ID"]
-        start = time.time()
-        logging.info("Starting crawl at {} from {}".format(
-            time.asctime(time.localtime(start)), address))
-        stewards = find_stewards(address, args.timeout)
-        logging.info("Found {} stewards".format(len(stewards)))
+    start = time.time()
+    logging.info("Starting crawl at {}".format(time.asctime(time.localtime(start))))
 
-        for address, steward in stewards.iteritems():
-            try:
-                index_steward(es, steward, args)
-            except Exception as e:
-                logging.error("Problems indexing {}: {}".format(steward["domain"], e.message))
+    if args.address:
+        address = args.address
+    else:
+        # Default to starting with the local cgtd
+        address = requests.get("http://ipfs:5001/api/v0/id").json()["ID"]
+    logging.info("Starting at {}".format(address))
+    stewards = find_stewards(address, args.timeout)
+    logging.info("Found {} stewards".format(len(stewards)))
 
-        end = time.time()
-        logging.info("Finished crawl at {} taking {} seconds".format(
-            time.asctime(time.localtime(end)), end - start))
-        if args.interval:
-            logging.info("Sleeping for {} minutes...".format(args.interval))
-            time.sleep(args.interval * 60)
-        else:
-            break
+    for address, steward in stewards.iteritems():
+        try:
+            index_steward(es, steward, args)
+        except Exception as e:
+            logging.error("Problems indexing {}: {}".format(steward["domain"], e.message))
+
+    end = time.time()
+    logging.info("Finished crawl at {} taking {} seconds".format(
+        time.asctime(time.localtime(end)), end - start))
 
 
 if __name__ == '__main__':
-    print "Running Crawler"
-    # main()
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    main()
