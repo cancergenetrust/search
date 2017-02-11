@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 import sys
 import time
 import datetime
@@ -40,7 +40,7 @@ def find_stewards(start, timeout):
                 stewards[address] = steward
                 queue.extend(set(steward["peers"]) - set(stewards.keys()))
             except Exception as e:
-                logging.error("Skipping peer {} problems resolving: {}".format(address, e.message))
+                logging.error("Skipping peer {} problems resolving: {}".format(address, e))
 
     return stewards
 
@@ -126,12 +126,7 @@ def main():
     # Create parent child relationship between stewards and submissions
     es.indices.create(index="cgt", ignore=400, body={
         "mappings": {
-            "steward": {
-                "resolved": {
-                    "type": "date",
-                    "format": "strict_date_optional_time"
-                }
-            },
+            "steward": {},
             "submission": {
                 "_parent": {
                     "type": "steward"
@@ -152,11 +147,11 @@ def main():
     stewards = find_stewards(address, args.timeout)
     logging.info("Found {} stewards".format(len(stewards)))
 
-    for address, steward in stewards.iteritems():
+    for address, steward in stewards.items():
         try:
             index_steward(es, steward, args)
         except Exception as e:
-            logging.error("Problems indexing {}: {}".format(steward["domain"], e.message))
+            logging.error("Problems indexing {}: {}".format(steward["domain"], e))
 
     end = time.time()
     logging.info("Finished crawl at {} taking {} seconds".format(

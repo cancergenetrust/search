@@ -1,8 +1,9 @@
-from flask import Flask
+import hug
+import requests
 
-app = Flask(__name__)
 
-
-@app.route('/dude')
-def hello_world():
-    return 'Hello, World!'
+@hug.get('/stewards')
+def stewards():
+    """ Return a list of stewards """
+    r = requests.get("http://es:9200/cgt/steward/_search/?size=1000")
+    return r.json()

@@ -36,7 +36,7 @@ $('document').ready(function() {
   });
 
   $.ajax({ 
-    url: "/es/cgt/steward/_search/?size=1000", 
+    url: "stewards", 
     type: "GET", 
     error: function(error) { alert("Search index error, likely undergoing maintenance."); },
     success: function(results) {
