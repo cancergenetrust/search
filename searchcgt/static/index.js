@@ -4,23 +4,10 @@ $('document').ready(function() {
   $("#query").focus();
 
   $("#search").submit(function(event) {
-    query = $("#query").val(); 
-    var request = {
-      "query": {
-        "match": {
-          "_all": {
-            "query": query,
-            "operator": "and"
-          }
-        }
-      },
-      "size": 100 
-    }
     $.ajax({ 
-      url: "/es/cgt/submission/_search", 
-      type: "POST", 
+      url: "/submissions/search?query=" + encodeURIComponent($("#query").val()), 
+      type: "GET", 
       dataType: "json", 
-      data: JSON.stringify(request), 
       success: function(results) {
         $("svg").hide();
         $("#results").html(resultsTemplate({results: results}));

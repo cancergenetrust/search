@@ -12,11 +12,14 @@ shell:
 
 crawl:
 	# Manual crawl starting at search.cancergenetrust.org
-	docker exec -it searchcgt_search_1 python search-cgt/crawl.py QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+	docker exec -it searchcgt_search_1 python searchcgt/crawl.py QmY96gKPRbQNaSDB2cZCWBriz9n5Ryisygo8DCCuDxSFqs
 
 reset:
 	# Delete the elastic search index forcing a rebuild
 	docker exec -it searchcgt_es_1 curl -X DELETE localhost:9200/cgt
+
+test:
+	docker exec -it searchcgt_search_1 py.test -p no:cacheprovider -s -x
 
 # es:
 # 	docker run -d -p 9200:9200 -p 9300:9300 \
@@ -39,13 +42,6 @@ reset:
 # 	docker stop nginx || true && docker rm nginx || true
 
 
-
-# test:
-# 	docker run -it --rm \
-# 		--entrypoint=py.test \
-# 		-v `pwd`:/usr/src/app:ro \
-# 		-v `pwd`/pyensembl:/root/.cache/pyensembl \
-# 		--link ipfs:ipfs --link es:es search-cgt -p no:cacheprovider -s -x
 
 # debug:
 # 	docker run -it --rm \

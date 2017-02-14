@@ -73,7 +73,7 @@ def update_submissions(es, steward, args):
                         r = requests.get("http://ipfs:8080/ipfs/{}".format(f["multihash"]),
                                          timeout=args.timeout)
                         assert(r.status_code == requests.codes.ok)
-                        genes.update(vcf2genes(r.content))
+                        genes.update(vcf2genes(r.text))
                     except:
                         logging.error("Problems summarizing vcf file: {} {}".format(
                             f["name"], f["multihash"]))
