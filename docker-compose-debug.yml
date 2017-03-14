@@ -1,8 +1,9 @@
-version: '3'
+version: '2'
 
 volumes:
   ipfs:
   es:
+  ensembl:
 
 services:
   ipfs:
@@ -15,15 +16,15 @@ services:
     volumes:
       - es:/usr/share/elasticsearch/data
 
-  crawl:
-    image: robcurrie/searchcgt
-    links:
-      - ipfs
-      - es
-    volumes:
-      - ./pyensembl:/root/.cache/pyensembl
-      - .:/usr/src/app
-    entrypoint: python searchcgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+  # crawl:
+  #   image: robcurrie/searchcgt
+  #   links:
+  #     - ipfs
+  #     - es
+  #   volumes:
+  #     - ./pyensembl:/root/.cache/pyensembl
+  #     - .:/usr/src/app
+  #   entrypoint: python searchcgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
     image: robcurrie/searchcgt
@@ -36,6 +37,6 @@ services:
     # Build and run out of local directory with auto-reload
     build: .
     volumes:
-      - ./pyensembl:/root/.cache/pyensembl
+      - ensembl:/root/.cache/pyensembl
       - .:/usr/src/app
     entrypoint: uwsgi --ini uwsgi.ini --honour-stdin --python-autoreload=1 --processes=1 --threads=1

@@ -7,12 +7,16 @@ debug:
 down:
 	docker-compose -f docker-compose-debug.yml down
 
+references:
+	# download reference - about 3.6GB onto a docker volume
+	docker exec -it searchcgt_search_1 pyensembl install --release 75 77 --species human 
+
 shell:
 	docker exec -it searchcgt_search_1 /bin/bash
 
 crawl:
 	# Manual crawl starting at search.cancergenetrust.org
-	docker exec -it searchcgt_search_1 python searchcgt/crawl.py QmY96gKPRbQNaSDB2cZCWBriz9n5Ryisygo8DCCuDxSFqs
+	docker exec -it searchcgt_search_1 python searchcgt/crawl.py -t 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
 reset:
 	# Delete the elastic search index forcing a rebuild
