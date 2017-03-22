@@ -17,12 +17,3 @@ def search_submissions(query: hug.types.text):
                       json={"query": {"match": {"_all": {"query": query, "operator": "and"}}},
                             "size": 100})
     return r.json()
-
-
-@hug.get("/ipfs/{multihash}")
-def ipfs(multihash):
-    try:
-        r = requests.get("http://ipfs:8080/ipfs/{}".format(multihash), timeout=5.0)
-        return r.content
-    except:
-        return("unreachable", 408)

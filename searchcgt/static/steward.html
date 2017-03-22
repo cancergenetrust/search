@@ -5,7 +5,7 @@
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="underscore-min.js"></script>
-    <script src="index.js"></script>
+    <script src="steward.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
 
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
@@ -43,10 +43,6 @@
 						<img src="images/logo_with_name.png" style="padding-left: 8px; height: 28px;">
 					</a>
 				</div>
-
-				<ul class="nav navbar-nav navbar-right">
-          <li><a href="api#/default"><span class="glyphicon glyphicon-cog"></span></a></li>
-				</ul>
 			</div>
 		</nav>
 
@@ -69,7 +65,7 @@
         <ul class="list-group">
         <% _.each(steward.peers, function(peer) { %>
           <li class="list-group-item"><h4>
-            <a href="index.html?steward=<%= peer %>">
+            <a href="steward.html?steward=<%= peer %>">
                 <%= peer %>
             </a>
           </h4></li>
@@ -84,7 +80,7 @@
         <ul class="list-group">
         <% _.each(steward.submissions, function(submission) { %>
           <li class="list-group-item"><h4>
-            <a href="index.html?submission=<%= submission %>">
+            <a href="steward.html?submission=<%= submission %>">
                 <%= submission %>
             </a>
           </h4></li>

@@ -62,7 +62,7 @@ function draw_network(stewards) {
     .attr("r", 16)
     .on("click", function(e) {
       if (d3.event.defaultPrevented) return; // skip if drag
-      window.location.href = "/cgtd/index.html?steward=" + e._id;
+      window.location.href = "/steward.html?steward=" + e._id;
     });
 
   // add the text 
