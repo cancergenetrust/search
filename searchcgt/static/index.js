@@ -27,10 +27,10 @@ $('document').ready(function() {
     type: "GET", 
     error: function(error) { alert("Search index error, likely undergoing maintenance."); },
     success: function(results) {
-      if (results.hits.total == 0) {
+      if (Object.keys(results.stewards).length === 0) {
         alert("Search index empty, likely undergoing maintenance.");
       } else {
-        draw_network(_.indexBy(results.hits.hits, '_id'));
+        draw_network(results.stewards);
       }
     }
   });

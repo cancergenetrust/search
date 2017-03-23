@@ -1,9 +1,10 @@
 function draw_network(stewards) {
 
   var addresses = _.keys(stewards);
+  console.log(addresses.length);
   var links = [];
   for (var i=0; i < addresses.length; i++) {
-    var peers = stewards[addresses[i]]._source.peers;
+    var peers = stewards[addresses[i]].peers;
     for (var j=0; j < peers.length; j++) {
       // Make sure source and destintation exist
       if (!(addresses[i] in stewards)) {
@@ -69,12 +70,12 @@ function draw_network(stewards) {
   node.append("text")
     .attr("x", 18)
     .attr("dy", ".35em")
-    .text(function(d) { return d._source.domain.toLowerCase(); });
+    .text(function(d) { return d.domain.toLowerCase(); });
   node.append("text")
     .attr("x", 0)
     .attr("dy", ".35em")
     .attr("text-anchor", "middle")
-    .text(function(d) { return d._source.submissions.length; });
+    .text(function(d) { return d.submissions.length; });
 
   // add the curvy lines
   function tick() {
