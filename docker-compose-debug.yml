@@ -16,15 +16,15 @@ services:
     volumes:
       - es:/usr/share/elasticsearch/data
 
-  # crawl:
-  #   image: robcurrie/searchcgt
-  #   links:
-  #     - ipfs
-  #     - es
-  #   volumes:
-  #     - ./pyensembl:/root/.cache/pyensembl
-  #     - .:/usr/src/app
-  #   entrypoint: python searchcgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+  crawl:
+    image: robcurrie/searchcgt
+    links:
+      - ipfs
+      - es
+    volumes:
+      - ./pyensembl:/root/.cache/pyensembl
+      - .:/usr/src/app
+    entrypoint: python searchcgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
     image: robcurrie/searchcgt
