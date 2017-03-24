@@ -6,30 +6,22 @@ $('document').ready(function() {
   var stewardTemplate = _.template($("#steward-template").html());
   var submissionTemplate = _.template($("#submission-template").html());
 
-  $("#progressDialog").modal("show");
-
   if ("submission" in params) {
-    $("#progress").html("Finding submission...");
-    $.getJSON("/ipfs/" + params.submission, function(submission) {
-      $("#progressDialog").modal("hide");
+    $.getJSON("/submissions/" + params.submission, function(result) {
 			$("#title").html("Submission");
       $("#submission").html(submissionTemplate({multihash: params.submission,
-        fields: submission.fields, files: submission.files}));
+        fields: result.submission.fields, files: result.submission.files}));
     })
     .error(function() { 
-      $("#progressDialog").modal("hide");
       $("#submission").html(submissionTemplate({multihash: "Unable to find " + params.submission,
         fields: [], files: []}));
     });
   } else {
-    $("#progress").html("Finding steward...");
-    $.getJSON("steward" in params ? "/ipns/" + params.steward : "/v0/" , function(steward) {
-      $("#progressDialog").modal("hide");
+    $.getJSON("/stewards/" + params.steward, function(result) {
 			$("#title").html("Steward");
-      $("#steward").html(stewardTemplate({address: params.steward, steward: steward}));
+      $("#steward").html(stewardTemplate({address: params.steward, steward: result.steward}));
     })
     .error(function() { 
-      $("#progressDialog").modal("hide");
       $("#steward").html(stewardTemplate(
         {address: params.steward, steward: {domain: "Unable to resolve " + params.steward, peers: [], submissions: []}}));
     });

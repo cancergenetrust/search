@@ -35,7 +35,7 @@ def search_submissions(query: hug.types.text):
 
 @hug.get("/submissions/{multihash}")
 def submission(multihash, response):
-    """ Return a submission """
+    """ Return a submission stored in elastic search """
     r = requests.post("http://es:9200/cgt/submission/_search",
                       json={"query": {"match": {"_id": multihash}}})
     match = r.json()["hits"]["hits"]

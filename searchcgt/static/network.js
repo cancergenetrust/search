@@ -1,7 +1,6 @@
 function draw_network(stewards) {
 
   var addresses = _.keys(stewards);
-  console.log(addresses.length);
   var links = [];
   for (var i=0; i < addresses.length; i++) {
     var peers = stewards[addresses[i]].peers;
@@ -63,7 +62,7 @@ function draw_network(stewards) {
     .attr("r", 16)
     .on("click", function(e) {
       if (d3.event.defaultPrevented) return; // skip if drag
-      window.location.href = "/steward.html?steward=" + e._id;
+      window.location.href = "/steward.html?steward=" + e.address;
     });
 
   // add the text 
