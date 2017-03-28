@@ -24,7 +24,7 @@ services:
     volumes:
       - ./pyensembl:/root/.cache/pyensembl
       - .:/usr/src/app
-    entrypoint: python searchcgt/crawl.py -t 60 -i 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+    entrypoint: python searchcgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
     image: robcurrie/searchcgt
@@ -39,3 +39,4 @@ services:
     volumes:
       - ensembl:/root/.cache/pyensembl
       - .:/usr/src/app
+    command: --python-autoreload=1 --processes=1 --threads=1

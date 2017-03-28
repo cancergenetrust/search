@@ -4,23 +4,10 @@ $('document').ready(function() {
   $("#query").focus();
 
   $("#search").submit(function(event) {
-    query = $("#query").val(); 
-    var request = {
-      "query": {
-        "match": {
-          "_all": {
-            "query": query,
-            "operator": "and"
-          }
-        }
-      },
-      "size": 100 
-    }
     $.ajax({ 
-      url: "/es/cgt/submission/_search", 
-      type: "POST", 
+      url: "/submissions/search?query=" + encodeURIComponent($("#query").val()), 
+      type: "GET", 
       dataType: "json", 
-      data: JSON.stringify(request), 
       success: function(results) {
         $("svg").hide();
         $("#results").html(resultsTemplate({results: results}));
@@ -36,14 +23,14 @@ $('document').ready(function() {
   });
 
   $.ajax({ 
-    url: "/es/cgt/steward/_search/?size=1000", 
+    url: "stewards", 
     type: "GET", 
     error: function(error) { alert("Search index error, likely undergoing maintenance."); },
     success: function(results) {
-      if (results.hits.total == 0) {
+      if (Object.keys(results.stewards).length === 0) {
         alert("Search index empty, likely undergoing maintenance.");
       } else {
-        draw_network(_.indexBy(results.hits.hits, '_id'));
+        draw_network(results.stewards);
       }
     }
   });

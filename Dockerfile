@@ -1,2 +1,2 @@
-FROM python:2-onbuild
-ENTRYPOINT ["python", "searchcgt/crawl.py"]
+FROM python:3-onbuild
+ENTRYPOINT ["uwsgi", "--ini", "uwsgi.ini"]
