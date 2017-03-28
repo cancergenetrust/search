@@ -1,5 +1,6 @@
-from pyensembl import EnsemblRelease
 import re
+import logging
+from pyensembl import EnsemblRelease
 
 GRCh37 = EnsemblRelease(75)
 GRCh38 = EnsemblRelease(77)
@@ -18,7 +19,7 @@ def vcf2genes(vcf):
     elif "grch38" in reference or "hg19" in reference:
         assembly = GRCh38
     else:
-        print("Unknown assembly reference: {}".format(reference))
+        logging.info("Unknown assembly reference: {}".format(reference))
         return []
 
     # grep the chromosome and locus of all mutations

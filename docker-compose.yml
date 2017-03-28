@@ -1,40 +1,41 @@
 version: '2'
 
+volumes:
+  ipfs:
+  es:
+  ensembl:
+
 services:
   ipfs:
-    image: ipfs/go-ipfs:v0.4.3
+    image: ipfs/go-ipfs
+    volumes:
+      - ipfs:/data/ipfs
+
+  es:
+    image: elasticsearch
+    volumes:
+      - es:/usr/share/elasticsearch/data
+
+  crawl:
+    image: robcurrie/searchcgt
+    links:
+      - ipfs
+      - es
+    volumes:
+      - ./pyensembl:/root/.cache/pyensembl
+      - .:/usr/src/app
+    entrypoint: python searchcgt/crawl.py -t 60 -i 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
-    build: .
+    image: robcurrie/searchcgt
+    ports:
+      - "5000:5000"
+    links:
+      - ipfs
+      - es
 
-    # # volumes:
-    # #   - ./ipfs:/data/ipfs
-  # cgtd:
-    # image: robcurrie/cgtd:latest
-    # links:
-    #   - ipfs
-  # es:
-    # image: elasticsearch
-    # # volumes:
-    # #   - ./data/es:/usr/share/elasticsearch/data
-  # nginx:
-    # image: nginx
-    # ports:
-    #   - 5282:80
-    # volumes:
-    #   - ./default.conf:/etc/nginx/conf.d/default.conf:ro
-    # volumes_from:
-    #   - www
-    # links:
-    #   - ipfs
-    #   - cgtd
-    #   - es
-  # search-cgt:
-    # image: search-cgt
-    # links:
-    #   - cgtd
-    #   - es
-  # www:
-    # image: search-cgt
-    # volumes:
-    #   - ./www:/usr/share/nginx/html:ro
+    # Build and run out of local directory with auto-reload
+    build: .
+    volumes:
+      - ensembl:/root/.cache/pyensembl
+      - .:/usr/src/app

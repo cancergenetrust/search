@@ -1,2 +1,2 @@
 FROM python:3-onbuild
-ENTRYPOINT ["uwsgi", "--ini uwsgi.ini"]
+ENTRYPOINT ["uwsgi", "--ini", "uwsgi.ini"]

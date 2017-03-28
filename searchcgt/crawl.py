@@ -91,8 +91,9 @@ def index_steward(es, steward, args):
     """
     logging.info("Indexing steward {}".format(steward["domain"]))
     if es.exists(index="cgt", doc_type="steward", id=steward["address"]):
-        res = es.get(index="cgt", doc_type="steward", id=steward["address"], fields="multihash")
-        if res["fields"]["multihash"][0] == steward["multihash"]:
+        # REMIND: Should just pull back multihash
+        res = es.get(index="cgt", doc_type="steward", id=steward["address"])
+        if res["_source"]["multihash"][0] == steward["multihash"]:
             logging.info("Steward {} has not changed, skipping".format(steward["domain"]))
         else:
             logging.info("Updating steward: {}".format(steward["domain"]))
@@ -113,6 +114,8 @@ def main():
     Crawls the CGT build an elastic search index stewards and submissions
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("-d", "--debug", action='store_true', default=False,
+                        help="Debug output")
     parser.add_argument("-t", "--timeout", type=int, default=20,
                         help="Seconds to wait for IPNS to resolve a steward")
     parser.add_argument("-s", "--skip_submissions", action='store_true', default=False,
@@ -122,6 +125,9 @@ def main():
     parser.add_argument("address", nargs='?', default="",
                         help="Address of steward to start crawl")
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     while True:
         start = time.time()
@@ -172,5 +178,5 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     main()

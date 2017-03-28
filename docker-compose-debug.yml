@@ -39,4 +39,4 @@ services:
     volumes:
       - ensembl:/root/.cache/pyensembl
       - .:/usr/src/app
-    entrypoint: uwsgi --ini uwsgi.ini --honour-stdin --python-autoreload=1 --processes=1 --threads=1
+    command: --python-autoreload=1 --processes=1 --threads=1
