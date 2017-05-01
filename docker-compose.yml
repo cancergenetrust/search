@@ -20,6 +20,8 @@ volumes:
 services:
   nginx:
     image: jwilder/nginx-proxy:0.6.0
+    environment:
+      - DEFAULT_HOST=search.cancergenetrust.org
     ports:
       - "80:80"
     volumes:
