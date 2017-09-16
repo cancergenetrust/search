@@ -4,7 +4,7 @@ build:
 debug:
 	docker-compose -f docker-compose-debug.yml up
 
-run:
+up:
 	docker-compose up
 
 down:
