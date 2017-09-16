@@ -2,17 +2,40 @@ version: '2'
 
 volumes:
   ipfs:
+    driver_opts:
+      type: none
+      device: /mnt/ipfs
+      o: bind
   es:
+    driver_opts:
+      type: none
+      device: /mnt/es
+      o: bind
   ensembl:
+    driver_opts:
+      type: none
+      device: /mnt/ensembl
+      o: bind
 
 services:
+  nginx:
+    image: jwilder/nginx-proxy:0.6.0
+    environment:
+      - DEFAULT_HOST=search.cancergenetrust.org
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
   ipfs:
-    image: ipfs/go-ipfs
+    image: ipfs/go-ipfs:release
+    ports:
+      - "4001:4001"
     volumes:
       - ipfs:/data/ipfs
 
   es:
-    image: elasticsearch
+    image: elasticsearch:5.3
     volumes:
       - es:/usr/share/elasticsearch/data
 
@@ -21,21 +44,18 @@ services:
     links:
       - ipfs
       - es
+    build: .
     volumes:
-      - ./pyensembl:/root/.cache/pyensembl
-      - .:/usr/src/app
+      - ensembl:/root/.cache/pyensembl
     entrypoint: python searchcgt/crawl.py -t 60 -i 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
     image: robcurrie/searchcgt
-    ports:
-      - "5000:5000"
+    environment:
+      - VIRTUAL_HOST=search.cancergenetrust.org
     links:
       - ipfs
       - es
-
-    # Build and run out of local directory with auto-reload
     build: .
     volumes:
       - ensembl:/root/.cache/pyensembl
-      - .:/usr/src/app
