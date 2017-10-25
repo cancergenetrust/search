@@ -28,7 +28,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
   ipfs:
-    image: ipfs/go-ipfs:release
+    image: ipfs/go-ipfs:v0.4.10
     ports:
       - "4001:4001"
     volumes:

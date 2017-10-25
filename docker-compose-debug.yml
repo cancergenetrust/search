@@ -7,7 +7,7 @@ volumes:
 
 services:
   ipfs:
-    image: ipfs/go-ipfs
+    image: ipfs/go-ipfs:v0.4.10
     volumes:
       - ipfs:/data/ipfs
 
@@ -17,7 +17,7 @@ services:
       - es:/usr/share/elasticsearch/data
 
   crawl:
-    image: robcurrie/searchcgt
+    image: cancergenetrust/search
     links:
       - ipfs
       - es
@@ -27,7 +27,7 @@ services:
     entrypoint: python searchcgt/crawl.py -t 60 -i 1 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
-    image: robcurrie/searchcgt
+    image: cancergenetrust/search
     ports:
       - "5000:5000"
     links:
