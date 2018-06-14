@@ -2,7 +2,8 @@ build:
 	docker-compose -f docker-compose-debug.yml build
 
 debug:
-	docker-compose -f docker-compose-debug.yml up
+	docker-compose -f docker-compose-debug.yml up -d
+	docker-compose logs -f
 
 up:
 	docker-compose up -d
@@ -26,7 +27,7 @@ crawl:
 	# Manual crawl starting at search.cancergenetrust.org
 	# docker exec -it searchcgt_search_1 python searchcgt/crawl.py -t 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 	# Manual crawl starting at 
-	docker exec -it searchcgt_search_1 python searchcgt/crawl.py -d -t 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
+	docker exec -it search_crawl_1 python searchcgt/crawl.py -d -t 300 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
 reset:
 	# Delete the elastic search index forcing a rebuild
@@ -34,3 +35,6 @@ reset:
 
 test:
 	docker exec -it searchcgt_search_1 py.test -p no:cacheprovider -s -x
+
+backup:
+	docker run --rm -it -v search_es:/search_es:ro -v `pwd`:/backup ubuntu tar -zcvf /backup/search_es.tar /search_es

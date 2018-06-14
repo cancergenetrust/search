@@ -4,17 +4,17 @@ volumes:
   ipfs:
     driver_opts:
       type: none
-      device: /mnt/ipfs
+      device: /mnt/search/ipfs
       o: bind
   es:
     driver_opts:
       type: none
-      device: /mnt/es
+      device: /mnt/search/es
       o: bind
   ensembl:
     driver_opts:
       type: none
-      device: /mnt/ensembl
+      device: /mnt/search/ensembl
       o: bind
 
 services:
@@ -28,7 +28,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
   ipfs:
-    image: ipfs/go-ipfs:v0.4.10
+    image: ipfs/go-ipfs:v0.4.15
     ports:
       - "4001:4001"
     volumes:
@@ -40,7 +40,7 @@ services:
       - es:/usr/share/elasticsearch/data
 
   crawl:
-    image: robcurrie/searchcgt
+    image: cancergenetrust/search
     links:
       - ipfs
       - es
@@ -50,7 +50,7 @@ services:
     entrypoint: python searchcgt/crawl.py -t 60 -i 60 QmWPSzKERs6KAjb8QfSXViFqyEUn3VZYYnXjgG6hJwXWYK
 
   search:
-    image: robcurrie/searchcgt
+    image: cancergenetrust/search
     environment:
       - VIRTUAL_HOST=search.cancergenetrust.org
     links:
